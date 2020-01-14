@@ -127,7 +127,7 @@ public class GitlabServerPullRequestDecorator implements PullRequestBuildStatusD
             User user = getSingle(userURL, headers, User.class);
             LOGGER.info(String.format("Using user: %s ", user.getUsername()));
 
-            List<String> commits = getPagedList(prCommitsURL, headers, deleteCommentsEnabled, new TypeReference<List<Commit>>() {
+            List<String> commits = getPagedList(prCommitsURL, headers, true, new TypeReference<List<Commit>>() {
             }).stream().map(Commit::getId).collect(Collectors.toList());
             MergeRequest mergeRequest = getSingle(mergeRequestURl, headers, MergeRequest.class);
 
@@ -170,16 +170,6 @@ public class GitlabServerPullRequestDecorator implements PullRequestBuildStatusD
                 if (path != null && issue.getIssue().getLine() != null) {
                     //only if we have a path and line number
                     String fileComment = analysis.createAnalysisIssueSummary(issue, new MarkdownFormatterFactory());
-
-                    scmInfoRepository.getScmInfo(issue.getComponent())
-                            .filter(i -> i.hasChangesetForLine(issue.getIssue().getLine()))
-                            .map(i -> i.getChangesetForLine(issue.getIssue().getLine()))
-                            .map(Changeset::getRevision).ifPresent(rev -> LOGGER.info(String.format("Revision: %s", rev)));
-
-                    LOGGER.info("Commits in MR:");
-                    for (String c: commits) {
-                        LOGGER.info(c);
-                    }
 
                     if (scmInfoRepository.getScmInfo(issue.getComponent())
                             .filter(i -> i.hasChangesetForLine(issue.getIssue().getLine()))
