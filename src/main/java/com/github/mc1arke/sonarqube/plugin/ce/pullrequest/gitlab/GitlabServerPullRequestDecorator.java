@@ -61,7 +61,6 @@ import org.sonar.ce.task.projectanalysis.component.ConfigurationRepository;
 import org.sonar.ce.task.projectanalysis.scm.Changeset;
 import org.sonar.ce.task.projectanalysis.scm.ScmInfo;
 import org.sonar.ce.task.projectanalysis.scm.ScmInfoRepository;
-import org.sonar.ce.task.projectanalysis.source.NewLinesRepository;
 
 public class GitlabServerPullRequestDecorator implements PullRequestBuildStatusDecorator {
 
@@ -77,14 +76,12 @@ public class GitlabServerPullRequestDecorator implements PullRequestBuildStatusD
     private final ConfigurationRepository configurationRepository;
     private final Server server;
     private final ScmInfoRepository scmInfoRepository;
-    private final NewLinesRepository newLinesRepository;
 
-    public GitlabServerPullRequestDecorator(Server server, ConfigurationRepository configurationRepository, ScmInfoRepository scmInfoRepository, NewLinesRepository newLinesRepository) {
+    public GitlabServerPullRequestDecorator(Server server, ConfigurationRepository configurationRepository, ScmInfoRepository scmInfoRepository) {
         super();
         this.configurationRepository = configurationRepository;
         this.server = server;
         this.scmInfoRepository = scmInfoRepository;
-        this.newLinesRepository = newLinesRepository;
     }
 
     @Override
@@ -167,8 +164,6 @@ public class GitlabServerPullRequestDecorator implements PullRequestBuildStatusD
                 if (path != null && issue.getIssue().getLine() != null) {
                     //only if we have a path and line number
                     String fileComment = analysis.createAnalysisIssueSummary(issue, new MarkdownFormatterFactory());
-                    Optional<Set<Integer>> newLines = newLinesRepository.getNewLines(issue.getComponent());
-                    newLines.ifPresent(set -> LOGGER.info(String.format("New lines: %s", set.toString())));
 
                     if (scmInfoRepository.getScmInfo(issue.getComponent())
                             .filter(i -> i.hasChangesetForLine(issue.getIssue().getLine()))
@@ -183,14 +178,10 @@ public class GitlabServerPullRequestDecorator implements PullRequestBuildStatusD
                                 new BasicNameValuePair("position[base_sha]", mergeRequest.getDiffRefs().getBaseSha()),
                                 new BasicNameValuePair("position[start_sha]", mergeRequest.getDiffRefs().getStartSha()),
                                 new BasicNameValuePair("position[head_sha]", mergeRequest.getDiffRefs().getHeadSha()),
+                                new BasicNameValuePair("position[old_path]", path),
                                 new BasicNameValuePair("position[new_path]", path),
                                 new BasicNameValuePair("position[new_line]", String.valueOf(issue.getIssue().getLine())),
                                 new BasicNameValuePair("position[position_type]", "text"));
-
-                        newLines.ifPresent(set -> { if (!set.contains(issue.getIssue().getLine())) {
-                            fileContentParams.add(new BasicNameValuePair("position[old_path]", path));
-                            LOGGER.info("Issue not for new line");
-                        }});
 
                         postCommitComment(mergeRequestDiscussionURL, headers, fileContentParams, fileCommentEnabled);
                     } else {
