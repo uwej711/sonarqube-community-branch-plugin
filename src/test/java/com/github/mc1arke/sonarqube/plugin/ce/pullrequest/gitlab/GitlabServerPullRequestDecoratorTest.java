@@ -4,7 +4,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Optional;
 
 import com.github.mc1arke.sonarqube.plugin.ce.pullrequest.AnalysisDetails;
@@ -147,6 +146,7 @@ public class GitlabServerPullRequestDecoratorTest {
                         urlEncode("position[base_sha]") + "=d6a420d043dfe85e7c240fd136fc6e197998b10a&" +
                         urlEncode("position[start_sha]") + "=d6a420d043dfe85e7c240fd136fc6e197998b10a&" +
                         urlEncode("position[head_sha]") + "=" + commitSHA + "&" +
+                        urlEncode("position[old_path]") + "=" + urlEncode(filePath) + "&" +
                         urlEncode("position[new_path]") + "=" + urlEncode(filePath) + "&" +
                         urlEncode("position[new_line]") + "=" + lineNumber + "&" +
                         urlEncode("position[position_type]") + "=text"))
