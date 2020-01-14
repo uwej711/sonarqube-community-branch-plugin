@@ -65,6 +65,7 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.ce.task.projectanalysis.component.ConfigurationRepository;
 import org.sonar.ce.task.projectanalysis.scm.Changeset;
+import org.sonar.ce.task.projectanalysis.scm.ScmInfo;
 import org.sonar.ce.task.projectanalysis.scm.ScmInfoRepository;
 
 public class GitlabServerPullRequestDecorator implements PullRequestBuildStatusDecorator {
@@ -169,6 +170,12 @@ public class GitlabServerPullRequestDecorator implements PullRequestBuildStatusD
                 if (path != null && issue.getIssue().getLine() != null) {
                     //only if we have a path and line number
                     String fileComment = analysis.createAnalysisIssueSummary(issue, new MarkdownFormatterFactory());
+
+                    LOGGER.info(String.format("Issue line no: %d", issue.getIssue().getLine()));
+                    Optional<ScmInfo> scmInfo = scmInfoRepository.getScmInfo(issue.getComponent());
+                    scmInfo.ifPresent(info -> LOGGER.info(String.format("SCM Info: %s", info.toString())));
+                    scmInfo.ifPresent(info -> LOGGER.info(String.format("Changeset: %s", info.getChangesetForLine(issue.getIssue().getLine()).toString())));
+
                     if (scmInfoRepository.getScmInfo(issue.getComponent())
                             .filter(i -> i.hasChangesetForLine(issue.getIssue().getLine()))
                             .map(i -> i.getChangesetForLine(issue.getIssue().getLine()))
