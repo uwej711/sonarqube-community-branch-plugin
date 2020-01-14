@@ -171,10 +171,15 @@ public class GitlabServerPullRequestDecorator implements PullRequestBuildStatusD
                     //only if we have a path and line number
                     String fileComment = analysis.createAnalysisIssueSummary(issue, new MarkdownFormatterFactory());
 
-                    LOGGER.info(String.format("Issue line no: %d", issue.getIssue().getLine()));
-                    Optional<ScmInfo> scmInfo = scmInfoRepository.getScmInfo(issue.getComponent());
-                    scmInfo.ifPresent(info -> LOGGER.info(String.format("SCM Info: %s", info.toString())));
-                    scmInfo.ifPresent(info -> LOGGER.info(String.format("Changeset: %s", info.getChangesetForLine(issue.getIssue().getLine()).toString())));
+                    scmInfoRepository.getScmInfo(issue.getComponent())
+                            .filter(i -> i.hasChangesetForLine(issue.getIssue().getLine()))
+                            .map(i -> i.getChangesetForLine(issue.getIssue().getLine()))
+                            .map(Changeset::getRevision).ifPresent(rev -> LOGGER.info(String.format("Revision: %s", rev)));
+
+                    LOGGER.info("Commits in MR:");
+                    for (String c: commits) {
+                        LOGGER.info(c);
+                    }
 
                     if (scmInfoRepository.getScmInfo(issue.getComponent())
                             .filter(i -> i.hasChangesetForLine(issue.getIssue().getLine()))
