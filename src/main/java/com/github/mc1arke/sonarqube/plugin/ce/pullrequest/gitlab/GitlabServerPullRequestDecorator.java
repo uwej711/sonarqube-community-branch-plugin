@@ -21,13 +21,7 @@ package com.github.mc1arke.sonarqube.plugin.ce.pullrequest.gitlab;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -67,6 +61,7 @@ import org.sonar.ce.task.projectanalysis.component.ConfigurationRepository;
 import org.sonar.ce.task.projectanalysis.scm.Changeset;
 import org.sonar.ce.task.projectanalysis.scm.ScmInfo;
 import org.sonar.ce.task.projectanalysis.scm.ScmInfoRepository;
+import org.sonar.ce.task.projectanalysis.source.NewLinesRepository;
 
 public class GitlabServerPullRequestDecorator implements PullRequestBuildStatusDecorator {
 
@@ -82,12 +77,14 @@ public class GitlabServerPullRequestDecorator implements PullRequestBuildStatusD
     private final ConfigurationRepository configurationRepository;
     private final Server server;
     private final ScmInfoRepository scmInfoRepository;
+    private final NewLinesRepository newLinesRepository;
 
-    public GitlabServerPullRequestDecorator(Server server, ConfigurationRepository configurationRepository, ScmInfoRepository scmInfoRepository) {
+    public GitlabServerPullRequestDecorator(Server server, ConfigurationRepository configurationRepository, ScmInfoRepository scmInfoRepository, NewLinesRepository newLinesRepository) {
         super();
         this.configurationRepository = configurationRepository;
         this.server = server;
         this.scmInfoRepository = scmInfoRepository;
+        this.newLinesRepository = newLinesRepository;
     }
 
     @Override
@@ -170,6 +167,7 @@ public class GitlabServerPullRequestDecorator implements PullRequestBuildStatusD
                 if (path != null && issue.getIssue().getLine() != null) {
                     //only if we have a path and line number
                     String fileComment = analysis.createAnalysisIssueSummary(issue, new MarkdownFormatterFactory());
+                    Optional<Set<Integer>> newLines = newLinesRepository.getNewLines(issue.getComponent());
 
                     if (scmInfoRepository.getScmInfo(issue.getComponent())
                             .filter(i -> i.hasChangesetForLine(issue.getIssue().getLine()))
@@ -187,6 +185,11 @@ public class GitlabServerPullRequestDecorator implements PullRequestBuildStatusD
                                 new BasicNameValuePair("position[new_path]", path),
                                 new BasicNameValuePair("position[new_line]", String.valueOf(issue.getIssue().getLine())),
                                 new BasicNameValuePair("position[position_type]", "text"));
+
+                        newLines.ifPresent(set -> { if (!set.contains(issue.getIssue().getLine())) {
+                            fileContentParams.add(new BasicNameValuePair("position[old_path]", path));
+                        }});
+
                         postCommitComment(mergeRequestDiscussionURL, headers, fileContentParams, fileCommentEnabled);
                     } else {
                         LOGGER.info(String.format("Skipping %s:%d since the commit does not belong to the MR", path, issue.getIssue().getLine()));

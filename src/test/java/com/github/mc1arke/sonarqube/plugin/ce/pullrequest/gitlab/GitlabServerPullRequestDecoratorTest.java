@@ -4,6 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Optional;
 
 import com.github.mc1arke.sonarqube.plugin.ce.pullrequest.AnalysisDetails;
@@ -23,6 +24,7 @@ import org.sonar.ce.task.projectanalysis.component.ConfigurationRepository;
 import org.sonar.ce.task.projectanalysis.scm.Changeset;
 import org.sonar.ce.task.projectanalysis.scm.ScmInfo;
 import org.sonar.ce.task.projectanalysis.scm.ScmInfoRepository;
+import org.sonar.ce.task.projectanalysis.source.NewLinesRepository;
 import org.sonar.core.issue.DefaultIssue;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.created;
@@ -153,7 +155,10 @@ public class GitlabServerPullRequestDecoratorTest {
 
         Server server = mock(Server.class);
         when(server.getPublicRootUrl()).thenReturn(sonarRootUrl);
-        GitlabServerPullRequestDecorator pullRequestDecorator = new GitlabServerPullRequestDecorator(server, configurationRepository, scmInfoRepository);
+
+        NewLinesRepository newLinesRepository = mock(NewLinesRepository.class);
+        when(newLinesRepository.getNewLines(Mockito.any())).thenReturn(Optional.empty());
+        GitlabServerPullRequestDecorator pullRequestDecorator = new GitlabServerPullRequestDecorator(server, configurationRepository, scmInfoRepository, newLinesRepository);
 
 
         pullRequestDecorator.decorateQualityGateStatus(analysisDetails);
